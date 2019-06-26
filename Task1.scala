@@ -22,14 +22,14 @@ object Task1 {
             }
 
             if(rating == max){
-                result ++= i.toString
+                result ++= "," + i.toString
             }else if(rating > max){
                 max = rating
                 result.clear()
                 result ++= i.toString
             }
-            movieName + "," + result.toString
         }
+        movieName + "," + result.toString
     })
     
     output.saveAsTextFile(args(1))
