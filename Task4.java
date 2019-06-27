@@ -19,7 +19,7 @@ import org.apache.hadoop.util.GenericOptionsParser;
 
 public class Task4 {
 
-    public static class UserMapper extends Mapper<Object, Text, Text, MapWritable> {          
+    public static class LevelOneMapper extends Mapper<Object, Text, Text, MapWritable> {          
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
             String[] values = value.toString().split(",", -1);
             for(int i = 1; i < values.length; i++){
@@ -42,8 +42,7 @@ public class Task4 {
         }
     }
     
-    public static class UserReducer extends Reducer<Text, MapWritable, Text, IntWritable>{
-        
+    public static class LevelOneReducer extends Reducer<Text, MapWritable, Text, Text>{
         public void reduce(Text key, Iterable<MapWritable> values, Context context) throws IOException, InterruptedException{
             ArrayList<MapWritable> valueArr = new ArrayList<MapWritable>();
             
@@ -72,12 +71,12 @@ public class Task4 {
                     
                     if(movieRating1.equals(movieRating2)){
                         Text moviePair = new Text();
-                        IntWritable similarityCount = new IntWritable();
-                        similarityCount.set(1);
+                        Text similarityCount = new Text();
+                        similarityCount.set("1");
                         if(movieName1.toString().compareTo(movieName2.toString()) < 0){
-                            moviePair.set(movieName1.toString() + "," + movieName2.toString());
+                            moviePair.set(movieName1.toString() + "_" + movieName2.toString());
                         }else{
-                            moviePair.set(movieName2.toString() + "," + movieName1.toString());
+                            moviePair.set(movieName2.toString() + "_" + movieName1.toString());
                         }
                         context.write(moviePair, similarityCount);                
                     }
@@ -86,22 +85,55 @@ public class Task4 {
         }
     }
     
+    public static class LevelTwoMapper extends Mapper<Object, Text, Text, Text> {          
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
+		    String[] values = value.toString().split(","); 
+			context.write(new Text(values[0]), new Text(values[1]));
+        }
+    }
+    
+    public static class LevelTwoReducer extends Reducer<Text, Text, Text, IntWritable>{
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException{
+            IntWritable similarityCountResult = new IntWritable();
+            int sum = 0;
+            for (Text similarityCount: values){
+                sum += 1;
+            }
+            similarityCountResult.set(sum);
+            context.write(key, similarityCountResult);
+        }
+    }
+    
+    
     
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapreduce.output.textoutputformat.separator", ",");
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
     // add code here
-    Job job = Job.getInstance(conf, "Task4");
+    Job job = Job.getInstance(conf, "Task4_level_1");
     job.setJarByClass(Task4.class);
-    job.setMapperClass(UserMapper.class);  
-    job.setReducerClass(UserReducer.class);
+    job.setMapperClass(LevelOneMapper.class);  
+    job.setReducerClass(LevelOneReducer.class);
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(MapWritable.class);
     job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+    job.setOutputValueClass(Text.class);
     TextInputFormat.addInputPath(job, new Path(otherArgs[0]));
-    TextOutputFormat.setOutputPath(job, new Path(otherArgs[1]));
-    System.exit(job.waitForCompletion(true) ? 0 : 1);
+    TextOutputFormat.setOutputPath(job, new Path(String.format("%s_tmp", otherArgs[1])));
+    job.waitForCompletion(true);  
+      
+        
+    Job job2 = Job.getInstance(conf, "Task4_level_2");
+    job2.setJarByClass(Task4.class);
+    job2.setMapperClass(LevelTwoMapper.class);  
+    job2.setReducerClass(LevelTwoReducer.class);
+    job2.setMapOutputKeyClass(Text.class);
+    job2.setMapOutputValueClass(Text.class);
+    job2.setOutputKeyClass(Text.class);
+    job2.setOutputValueClass(IntWritable.class);
+    TextInputFormat.addInputPath(job2, new Path(String.format("%s_tmp", otherArgs[1])));
+    TextOutputFormat.setOutputPath(job2, new Path(otherArgs[1]));
+    System.exit(job2.waitForCompletion(true) ? 0 : 1);
   }
 }
