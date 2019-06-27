@@ -74,7 +74,7 @@ public class Task4 {
                         Text moviePair = new Text();
                         IntWritable similarityCount = new IntWritable();
                         similarityCount.set(1);
-                        if(movieName1.toString().compareTo(movieName2.toString()) > 0){
+                        if(movieName1.toString().compareTo(movieName2.toString()) < 0){
                             moviePair.set(movieName1.toString() + "," + movieName2.toString());
                         }else{
                             moviePair.set(movieName2.toString() + "," + movieName1.toString());
