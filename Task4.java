@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.MapWritable;
 import org.apache.hadoop.io.Writable;
@@ -113,6 +114,13 @@ public class Task4 {
     
     String temp_folder = String.format("%s_tmp", otherArgs[1].substring(0, otherArgs[1].length()-1));
     System.out.println("*******temp folder is *****:" + temp_folder);  
+    Path temp_path = new Path(temp_folder);
+    FileSystem fs = FileSystem.get(conf);
+    if(fs.exists(temp_path)){
+        fs.delete(temp_path, true);  
+        System.out.println("Temp folder already exists and has been deleted already.");
+    }
+    
     // add code here
     Job job = Job.getInstance(conf, "Task4_level_1");
     job.setJarByClass(Task4.class);
