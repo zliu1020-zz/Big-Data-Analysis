@@ -110,6 +110,9 @@ public class Task4 {
     Configuration conf = new Configuration();
     conf.set("mapreduce.output.textoutputformat.separator", ",");
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
+    
+    String temp_folder = String.format("%s_tmp", otherArgs[1].substring(0, otherArgs[1].length()-1));
+    System.out.println("*******temp folder is *****:" + temp_folder);  
     // add code here
     Job job = Job.getInstance(conf, "Task4_level_1");
     job.setJarByClass(Task4.class);
@@ -120,9 +123,9 @@ public class Task4 {
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
     TextInputFormat.addInputPath(job, new Path(otherArgs[0]));
-    TextOutputFormat.setOutputPath(job, new Path(String.format("%s_tmp", otherArgs[1])));
+    TextOutputFormat.setOutputPath(job, new Path(temp_folder));
     job.waitForCompletion(true);  
-      
+         
         
     Job job2 = Job.getInstance(conf, "Task4_level_2");
     job2.setJarByClass(Task4.class);
@@ -132,7 +135,7 @@ public class Task4 {
     job2.setMapOutputValueClass(Text.class);
     job2.setOutputKeyClass(Text.class);
     job2.setOutputValueClass(IntWritable.class);
-    TextInputFormat.addInputPath(job2, new Path(String.format("%s_tmp", otherArgs[1])));
+    TextInputFormat.addInputPath(job2, new Path(temp_folder));
     TextOutputFormat.setOutputPath(job2, new Path(otherArgs[1]));
     System.exit(job2.waitForCompletion(true) ? 0 : 1);
   }
