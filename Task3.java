@@ -30,13 +30,15 @@ public class Task3 {
     }
   }
 
-   public static class RatingReducer extends Reducer<IntWritable, IntWritable, IntWritable, Text> {
+   public static class RatingReducer extends Reducer<IntWritable, IntWritable, IntWritable, IntWritable> {
+     private IntWritable total = new IntWritable();
      public void reduce(IntWritable key, Iterable<IntWritable> ratings, Context context) throws IOException, InterruptedException {
        int count = 0;
        for(IntWritable rating : ratings) {
 				  count++;
 			  }
-      context.write(key, new Text(String.format("%1.2f",count)));
+      total.set(count);
+      context.write(key, total);
      }
    }
 
