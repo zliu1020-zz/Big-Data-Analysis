@@ -22,10 +22,8 @@ INPUT=/a2_inputs/in3.txt
 OUTPUT=/user/${USER}/a2_starter_code_output/
 
 hdfs dfs -rm -R $OUTPUT
-time spark-submit --master yarn --class Task4 Task4.jar $INPUT $OUTPUT
-spark-submit --class Task4 --driver-memory 4g --executor-memory 4g Task4.jar $INPUT $OUTPUT 
-yarn jar Task4.jar Task4 -D mapreduce.map.java.opts=-Xmx4g $INPUT o$OUTPUT
 
+time spark-submit --master yarn --class Task4 --driver-memory 4g --executor-memory 4g Task4.jar $INPUT $OUTPUT
 
 hdfs dfs -ls $OUTPUT
 
