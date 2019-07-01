@@ -96,7 +96,7 @@ public class Task4 {
                     //both array index start at 1 cause 0 is movie name
                     for(int i = 1; i < values.length; i++){ 
                         if(!values[i].equals("")){
-                            int currentMovieScore = Integer.parseInt(values[i]).intValue(); 
+                            int currentMovieScore = Integer.parseInt(values[i]);
                             int cachedMovieScore = ratings.get(i).intValue();
                             if((currentMovieScore > 0) && 
                                (cachedMovieScore > 0) && 
