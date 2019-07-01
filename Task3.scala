@@ -17,7 +17,7 @@ object Task3 {
     val textFile = sc.textFile(args(0))
     val output = textFile.flatMap(line => map(line))
     .groupByKey()
-    .map(v => (v._1,v._2.size));
+    .map{v => v._1 + "," + v._2.size};
     
     output.saveAsTextFile(args(1))
   }
