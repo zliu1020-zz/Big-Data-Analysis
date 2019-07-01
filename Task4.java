@@ -39,14 +39,16 @@ public class Task4 {
                         brReader = new BufferedReader(new FileReader(eachPath.toString()));
                         while ((strLineRead = brReader.readLine()) != null) {
                             String[] tokens = strLineRead.toString().split(",", -1);
+                            Integer dummyPlaceholder = new Integer(-1000);
                             List<Integer> tempArr = new ArrayList<Integer>();
-                            tempArr.add(-1000);
+                            tempArr.add(dummyPlaceholder);
+                           
                             for(int i = 1; i < tokens.length; i++){
                                 Integer rate;
                                 if(!tokens[i].equals("")){
                                     rate = Integer.parseInt(tokens[i]);    
                                 }else{
-                                    rate = -100;
+                                    rate = dummyPlaceholder;
                                 }
                                 
                                 tempArr.add(rate);
@@ -69,12 +71,12 @@ public class Task4 {
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
             String[] values = value.toString().split(",", -1);
             String currentMovieName = values[0];
-            
-            Iterator it = movieRatingMap.entrySet().iterator();
+
             for(Map.Entry<String, List<Integer>> entry : movieRatingMap.entrySet()){
                 String movieName = entry.getKey();
                 List<Integer> ratings = entry.getValue();
                 if(!movieName.equals(currentMovieName)){
+                    
                     //format the movie name as the manual requests
                     String movieNamePair;
                     if(movieName.toString().compareTo(currentMovieName.toString()) < 0){
@@ -89,36 +91,29 @@ public class Task4 {
                     }else if(!visited.containsKey(movieNamePair)){
                         visited.put(movieNamePair, Boolean.TRUE);
                     }
+                    
                     int similarityCount = 0;
                     //both array index start at 1 cause 0 is movie name
                     for(int i = 1; i < values.length; i++){ 
                         if(!values[i].equals("")){
-                            Integer rate = Integer.parseInt(values[i]); 
-                            if(rate.equals(ratings.get(i))){
+                            int currentMovieScore = Integer.parseInt(values[i]).intValue(); 
+                            int cachedMovieScore = ratings.get(i).intValue();
+                            if((currentMovieScore > 0) && 
+                               (cachedMovieScore > 0) && 
+                               (currentMovieScore == cachedMovieScore)){
                                 similarityCount += 1;
                             }
                         }
                         
                     }
+                    
                     Text outKey = new Text();
                     outKey.set(movieNamePair);
                     IntWritable outVal = new IntWritable();
                     outVal.set(similarityCount);
                     context.write(outKey, outVal);
-                    
-                    
-//                    IntWritable outKey = new IntWritable();
-//                    outKey.set(values.length);
-//                    IntWritable outVal = new IntWritable();
-//                    outVal.set(ratings.size());
-//                    context.write(outKey, outVal);
                 }
             }
-//                    Text outKey = new Text();
-//                    outKey.set("test");
-//                    IntWritable outVal = new IntWritable();
-//                    outVal.set(10);
-//                    context.write(outKey, outVal);
         }
     }   
     
@@ -148,7 +143,7 @@ public class Task4 {
     job.setMapOutputKeyClass(Text.class);
     job.setMapOutputValueClass(IntWritable.class);
     job.setOutputKeyClass(Text.class);
-    job.setOutputValueClass(IntWritable.class);
+    job.setOutputValueClass(Text.class);
     TextInputFormat.addInputPath(job, new Path(otherArgs[0]));
     TextOutputFormat.setOutputPath(job, new Path(otherArgs[1]));   
     System.exit(job.waitForCompletion(true) ? 0 : 1);
