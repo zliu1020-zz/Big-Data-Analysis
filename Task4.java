@@ -30,25 +30,19 @@ public class Task4 {
     public static class MapSideJoinMapper extends Mapper<Object, Text, Text, IntWritable> {
         private HashMap<String, List<Integer>> movieRatingMap = new HashMap<String, List<Integer>>();
         private BufferedReader brReader;
-        private static HashMap<String, Boolean> visited = new HashMap<String, Boolean>();
         
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+            
+            FileSplit fileSplit = (FileSplit) context.getInputSplit();
+            String file = fileSplit.getPath().getName();
 
-            FileSplit fileSplit;
-            InputSplit is = context.getInputSplit();
-            FileSystem fs = FileSystem.get(context.getConfiguration());
-            fileSplit = (FileSplit) is;
-            Path filePath = fileSplit.getPath();
-
-            String file = filePath.getName();
-
-            Path[] cacheFilesLocal = DistributedCache.getLocalCacheFiles(context.getConfiguration());
+            Path[] cachedFiles = DistributedCache.getLocalCacheFiles(context.getConfiguration());
             String strLineRead = "";
-            for (Path eachPath : cacheFilesLocal) {
-                if (eachPath.getName().toString().trim().equals(file)) {
+            for (Path p : cachedFiles) {
+                if (p.getName().toString().trim().equals(file)) {
                     try {
-                        brReader = new BufferedReader(new FileReader(eachPath.toString()));
+                        brReader = new BufferedReader(new FileReader(p.toString()));
                         while ((strLineRead = brReader.readLine()) != null) {
                             String[] tokens = strLineRead.toString().split(",", -1);
                             Integer dummyPlaceholder = new Integer(-1000);
@@ -96,13 +90,6 @@ public class Task4 {
                     }else{
                         movieNamePair = currentMovieName.toString() + "," + movieName.toString();
                     }
-                    
-                    // //skip the movie if the pair has been compared already
-                    // if(visited.containsKey(movieNamePair) && visited.get(movieNamePair).equals(Boolean.TRUE)){
-                    //     continue;
-                    // }else if(!visited.containsKey(movieNamePair)){
-                    //     visited.put(movieNamePair, Boolean.TRUE);
-                    // }
                     
                     int similarityCount = 0;
                     //both array index start at 1 cause 0 is movie name
