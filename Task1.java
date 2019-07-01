@@ -1,5 +1,7 @@
 import java.io.IOException;
 import java.util.StringTokenizer;
+import java.util.Collections;
+import java.util.ArrayList;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -17,7 +19,7 @@ public class Task1 {
   // add code here
   public static class TokenizerMapper extends Mapper<Object, Text, Text, Text> {
     Text movies = new Text();
-    Text ratings = new Text();
+    Text users = new Text();
       
     public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
         String[] values = value.toString().split(",", -1);
@@ -25,26 +27,27 @@ public class Task1 {
         String movieName = values[0];
         movies.set(movieName);
         
-        int max = -1; 
-        StringBuilder result = new StringBuilder();
+        int max = 0; 
+        ArrayList<Integer> result = new ArrayList<Integer>();
         for(int i = 1; i < values.length; i++){
     	    String val = values[i];
-            int rating = val.equals("") ? 0 : Integer.parseInt(val);
-            //Text tmp1 = new Text();
-	    //Text tmp2 = new Text();
-	    //tmp1.set(String.valueOf(i));
-	    //tmp2.set("rating = " + rating + " " + "max = " + max);
-	//	context.write(tmp1, tmp2);
+            int rating = val.equals("") ? -1 : Integer.parseInt(val);
             if(rating == max){
-                result.append("," + i);
+                result.add(i);
             }else if(rating > max){
                 max = rating;
-                result.setLength(0);
-                result.append(i);
+                result.clear();
+                result.add(i);
             }
         }
-        ratings.set(result.toString());
-        context.write(movies, ratings);
+        //sort user ids in numerical asending order
+        Collections.sort(result);
+        StringBuilder resultStr = new StringBuilder();
+        for(Integer user: result){
+            resultStr = resultStr.length() > 0 ? resultStr.append(",").append(user) : resultStr.append(user);
+        }
+        users.set(resultStr.toString());
+        context.write(movies, users);
     }
   } 
     
