@@ -1,5 +1,4 @@
 import java.io.IOException;
-import java.util.StringTokenizer;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
@@ -8,11 +7,9 @@ import java.util.ArrayList;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileNotFoundException;
-import java.util.Iterator;
 
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
 import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -20,7 +17,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.Reducer;
-import org.apache.hadoop.mapreduce.filecache.DistributedCache;
 import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -29,22 +25,23 @@ public class Task4 {
 
     public static class MapSideJoinMapper extends Mapper<Object, Text, Text, IntWritable> {
         private HashMap<String, List<Integer>> movieRatingMap = new HashMap<String, List<Integer>>();
-        private BufferedReader brReader;
+        private BufferedReader bufferedReader;
         
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
             
             FileSplit fileSplit = (FileSplit) context.getInputSplit();
             String file = fileSplit.getPath().getName();
-
-            Path[] cachedFiles = DistributedCache.getLocalCacheFiles(context.getConfiguration());
-            String strLineRead = "";
+            Path[] cachedFiles = context.getLocalCacheFiles();
+            String currentLine = "";
+            
             for (Path p : cachedFiles) {
-                if (p.getName().toString().trim().equals(file)) {
+                String currentFileName = p.getName().toString().trim();
+                if (currentFileName.equals(file)) {
                     try {
-                        brReader = new BufferedReader(new FileReader(p.toString()));
-                        while ((strLineRead = brReader.readLine()) != null) {
-                            String[] tokens = strLineRead.toString().split(",", -1);
+                        bufferedReader = new BufferedReader(new FileReader(p.toString()));
+                        while ((currentLine = bufferedReader.readLine()) != null) {
+                            String[] tokens = currentLine.toString().split(",", -1);
                             Integer dummyPlaceholder = new Integer(-1000);
                             List<Integer> tempArr = new ArrayList<Integer>();
                             tempArr.add(dummyPlaceholder);
@@ -61,17 +58,18 @@ public class Task4 {
                             }
                             movieRatingMap.put(tokens[0], tempArr);
                         }
-                    } catch (FileNotFoundException e) {
+                    } catch (Exception e) {
+                        System.out.println("Error reading files from cache. Exiting.");
                         e.printStackTrace();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }finally {
-                        if (brReader != null) {
-                            brReader.close();
+                    } finally {
+                        if (bufferedReader != null) {
+                            bufferedReader.close();
                         }
                     }
                 }
             }
+            
+            super.setup(context);
         }
         
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException{
@@ -134,7 +132,7 @@ public class Task4 {
     Configuration conf = new Configuration();
     conf.set("mapreduce.output.textoutputformat.separator", ",");
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-    DistributedCache.addCacheFile(new URI(otherArgs[0]), conf);
+    
     // add code here
     Job job = Job.getInstance(conf, "Task4");  
     job.setJarByClass(Task4.class);
@@ -144,6 +142,7 @@ public class Task4 {
     job.setMapOutputValueClass(IntWritable.class);
     job.setOutputKeyClass(Text.class);
     job.setOutputValueClass(Text.class);
+    job.addCacheFile(new URI(otherArgs[0]));
     TextInputFormat.addInputPath(job, new Path(otherArgs[0]));
     TextOutputFormat.setOutputPath(job, new Path(otherArgs[1]));   
     System.exit(job.waitForCompletion(true) ? 0 : 1);

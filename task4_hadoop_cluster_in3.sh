@@ -8,7 +8,7 @@ rm Task4.jar
 rm Task4*.class
 
 echo --- Compiling
-$JAVA_HOME/bin/javac Task4.java
+$JAVA_HOME/bin/javac -Xlint:deprecation Task4.java
 if [ $? -ne 0 ]; then
     exit
 fi
