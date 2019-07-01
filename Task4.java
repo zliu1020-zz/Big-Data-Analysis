@@ -10,6 +10,9 @@ import java.io.FileReader;
 import java.io.FileNotFoundException;
 import java.util.Iterator;
 
+import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.InputSplit;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.IntWritable;
@@ -31,10 +34,19 @@ public class Task4 {
         
         @Override
         protected void setup(Context context) throws IOException, InterruptedException {
+
+            FileSplit fileSplit;
+            InputSplit is = context.getInputSplit();
+            FileSystem fs = FileSystem.get(context.getConfiguration());
+            fileSplit = (FileSplit) is;
+            Path filePath = fileSplit.getPath();
+
+            String file = filePath.getName();
+
             Path[] cacheFilesLocal = DistributedCache.getLocalCacheFiles(context.getConfiguration());
             String strLineRead = "";
             for (Path eachPath : cacheFilesLocal) {
-                if (eachPath.getName().toString().trim().equals("in3.txt")) {
+                if (eachPath.getName().toString().trim().equals(file)) {
                     try {
                         brReader = new BufferedReader(new FileReader(eachPath.toString()));
                         while ((strLineRead = brReader.readLine()) != null) {
@@ -80,17 +92,17 @@ public class Task4 {
                     //format the movie name as the manual requests
                     String movieNamePair;
                     if(movieName.toString().compareTo(currentMovieName.toString()) < 0){
-                        movieNamePair = movieName.toString() + "_" + currentMovieName.toString();
+                        movieNamePair = movieName.toString() + "," + currentMovieName.toString();
                     }else{
-                        movieNamePair = currentMovieName.toString() + "_" + movieName.toString();
+                        movieNamePair = currentMovieName.toString() + "," + movieName.toString();
                     }
                     
-                    //skip the movie if the pair has been compared already
-                    if(visited.containsKey(movieNamePair) && visited.get(movieNamePair).equals(Boolean.TRUE)){
-                        continue;
-                    }else if(!visited.containsKey(movieNamePair)){
-                        visited.put(movieNamePair, Boolean.TRUE);
-                    }
+                    // //skip the movie if the pair has been compared already
+                    // if(visited.containsKey(movieNamePair) && visited.get(movieNamePair).equals(Boolean.TRUE)){
+                    //     continue;
+                    // }else if(!visited.containsKey(movieNamePair)){
+                    //     visited.put(movieNamePair, Boolean.TRUE);
+                    // }
                     
                     int similarityCount = 0;
                     //both array index start at 1 cause 0 is movie name
@@ -119,22 +131,23 @@ public class Task4 {
     
     public static class MyReducer extends Reducer<Text, IntWritable, Text, Text>{
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException{
+            Text outVal = new Text();
+            int sum = 0;
             for (IntWritable similarityCount: values){
-                Text outVal = new Text();
-                outVal.set(Integer.toString(similarityCount.get()));
-                context.write(key, outVal);
-            }            
+                sum += similarityCount.get();
+            }        
+            outVal.set(Integer.toString(sum/2));
+            context.write(key, outVal);    
         }
     }
 
-    
+
     
   public static void main(String[] args) throws Exception {
     Configuration conf = new Configuration();
     conf.set("mapreduce.output.textoutputformat.separator", ",");
     String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-    DistributedCache.addCacheFile(new URI("/a2_inputs/in3.txt"), conf);
-          
+    DistributedCache.addCacheFile(new URI(otherArgs[0]), conf);
     // add code here
     Job job = Job.getInstance(conf, "Task4");  
     job.setJarByClass(Task4.class);
